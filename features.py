@@ -48,33 +48,36 @@ def simpleUndirected(data):
     """Capture only undirected correlations between all pairs of neurons.
 
     Output is ~XOR of two inputs (true iff two neurons both firing or both not
-    firing). Single feature per neuron pair per timestep
+    firing). n features per neuron. One n by n feature matrix per timestep.
 
     Args:
         data (np.array): (n, p) sized, for n neurons, p timesteps.
 
     Returns:
-        np.array: n*p rows, n columns of output correspond to feature vectors
-        np.array: n*p rows of labels (each neuron's state at each time step)
+        [np.array]: p length list of nxn np.array feature matrix
+        [np.array]: p length list of n length np.array label vectors
     """
     (n, p) = data.shape
 
     # for each sample (neuron at a timestep), one feature per neuron
-    features = np.zeros((n * p, n))
-    labels = np.zeros(n * p)
+    features = []
+    feature = np.zeros((n, n))
+    labels = []
+    label = np.zeros(n)
     for t in range(p):
         for i in range(n):
-            row = t * n + i
-            labels[row] = data[i, t]
+            label[i] = data[i, t]
             for j in range(n):
                 if i == j:
                     # Dep of neuron on itself at previous timestep
                     if t == 0:
                         # No data == no correlation
-                        features[row, j] = 0
+                        feature[i, i] = 0
                     else:
-                        features[row, j] = ~(data[i, t] ^ data[i, t - 1])
+                        feature[i, i] = ~(data[i, t] ^ data[i, t - 1])
                 else:
                     # Dep of neuron on other neuron at same timestep
-                    features[row, j] = ~(data[i, t] ^ data[j, t])
+                    feature[i, j] = ~(data[i, t] ^ data[j, t])
+        features.append(feature)
+        labels.append(label)
     return features, labels
