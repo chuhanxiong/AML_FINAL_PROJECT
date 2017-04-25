@@ -9,7 +9,7 @@ import numpy as np
 def fourWayDirected(data):
     (n, p) = data.shape
     # t = 20
-    out = np.array(np.zeros(shape=(4, n, n)))
+    out = np.array(np.zeros(shape=(4, n, n))).astype('int64')
     for t in range(p):
         for j in range(n):
             for k in range(n):
@@ -39,8 +39,7 @@ def fourWayDirected(data):
                     if data[j][t] == 0 and data[k][t] == 1:
                         out[2][j][k] = 1
                     if data[j][t] == 1 and data[k][t] == 1:
-                        out[3][j][k] = 1
-    # print out[1, :, :]
+                        out[3][j][k] = 1    
     return out
 
 
@@ -61,13 +60,13 @@ def simpleUndirected(data):
 
     # for each sample (neuron at a timestep), one feature per neuron
     features = []
-    feature = np.zeros((n, n))
+    feature = np.zeros((n, n)).astype('int64')
     labels = []
-    label = np.zeros(n)
+    label = np.zeros(n).astype('int64')
     for t in range(p):
         for i in range(n):
             label[i] = data[i, t]
-            for j in range(n):
+            for j in range(n):                
                 if i == j:
                     # Dep of neuron on itself at previous timestep
                     if t == 0:

@@ -1,48 +1,55 @@
 import numpy as np
-import scipy.io as sio
-import scipy.sparse as ss
+from pystruct.models import GraphCRF
+from pystruct.learners import OneSlackSSVM
+from pystruct.inference import get_installed
+from util import *
+from features import simpleUndirected
+# debugging
+# from sklearn.datasets import load_iris
+# from sklearn.cross_validation import train_test_split
+# inference_method = get_installed(["qpbo", "ad3", "lp"])[0]
 
+# iris = load_iris()
+# X, y = iris.data, iris.target
+ 
+# X_ = [(np.atleast_2d(x), np.empty((0, 2), dtype=np.int)) for x in X]
+# Y = y.reshape(-1, 1)
+# print len(X_)
+# print Y.shape
+# print X_[0]
+# crf = GraphCRF(n_states=3, n_features=4, inference_method=inference_method)
+# model = OneSlackSSVM(model=crf, max_iter=100, C=100, check_constraints=False)
+# model.fit(X_, Y)
+####################################################################################
 
-# n = no of timesteps
-# m = no of neurons 
-dataset = sio.loadmat('Jan25_all_data_exp2.mat')
+inference_method = get_installed(["qpbo", "ad3", "lp"])[0]
 
-#for a particular timestep
-data = dataset['dF_F1']
-n = dataset['dF_F1'].shape[1]
-m = dataset['dF_F1'].shape[0]
+data = get_dF_F1()
+print 'data shape', data.shape
+data = data[:,:50]
+(n, p) = data.shape
 
-d = np.std(data)+np.mean(data)
+crf = GraphCRF(n_states=2, n_features=n, inference_method=inference_method)
+print 'get crf'
 
-data = ((data>=d)*np.ones(shape = dataset['dF_F1'].shape )).T
-t = 20
-#out = [[[0 for i in range(m)] for  i in range(m)] for i in range(4)]
-out = np.array(np.zeros(shape = (4,m,m)))
-for j in range(m):
-    for k in range(m):
-        if j==k:
-            if t == 0:
-                if data[k][t]==1:
-                    out[0][j][k] = 1
-                    out[1][j][k] = 1
-                    out[2][j][k] = 1
-                    out[3][j][k] = 1
-            else:
-                if data[j][t-1]==1 and data[k][t]==1:
-                    out[0][j][k] = 1
-                if data[j][t-1]==1 and data[k][t]==0:
-                    out[1][j][k] = 1
-                if data[j][t-1]==0 and data[k][t]==1:
-                    out[2][j][k] = 1
-                if data[j][t-1]==1 and data[k][t]==1:
-                    out[3][j][k] = 1
-        else:
-            if data[j][t]==1 and data[k][t]==1:
-                out[0][j][k] = 1
-            if data[j][t]==1 and data[k][t]==0:
-                out[1][j][k] = 1
-            if data[j][t]==0 and data[k][t]==1:
-                out[2][j][k] = 1
-            if data[j][t]==1 and data[k][t]==1:
-                out[3][j][k] = 1
-print out[1,:,:]
+model = OneSlackSSVM(model=crf, max_iter=100, C=100, check_constraints=False)
+print 'get model'
+
+features, labels = simpleUndirected(data)
+print 'get features, labels'
+edges = getEdges(data)
+print 'get edges'
+
+print 'labels shape', len(labels), labels[0].shape
+print 'features shape', len(features), features[0].shape
+print 'edges shape', edges.shape
+
+Y = labels
+X = zip(features, [edges]*len(features))
+
+labels[0] = np.zeros(n).astype('int64') + 1
+print labels[0]
+print labels[1]
+
+print 'fitting the model'
+model.fit(X, Y)
