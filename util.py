@@ -13,3 +13,19 @@ def get_dF_F1():
 def binarize(data,):
     d = np.std(data) + np.mean(data)
     return ((data >= d) * np.ones(shape=data.shape)).T
+
+def getEdges(data):
+    n = data.shape[0]
+    edges = np.zeros(shape=((n*(n+1))/2, 2))
+    idx = 0
+    
+    for i in range(1, n+1):
+        for j in range(i+1, n+1):
+            edges[idx][0] = i
+            edges[idx][1] = j
+            idx += 1
+        edges[idx][0] = i
+        edges[idx][1] = i
+        idx += 1
+    return edges
+
