@@ -54,23 +54,27 @@ def simpleUndirected(data):
         data (np.array): (n, p) sized, for n neurons, p timesteps.
 
     Returns:
-        np.array: n columns of output correspond to feature vectors
+        np.array: n*p rows, n columns of output correspond to feature vectors
+        np.array: n*p rows of labels (each neuron's state at each time step)
     """
     (n, p) = data.shape
 
     # for each sample (neuron at a timestep), one feature per neuron
     features = np.zeros((n * p, n))
+    labels = np.zeros(n * p)
     for t in range(p):
         for i in range(n):
+            row = t * n + i
+            labels[row] = data[i, t]
             for j in range(n):
                 if i == j:
                     # Dep of neuron on itself at previous timestep
                     if t == 0:
                         # No data == no correlation
-                        features[i * t, j] = 0
+                        features[row, j] = 0
                     else:
-                        features[i * t, j] = ~(data[i, t] ^ data[i, t - 1])
+                        features[row, j] = ~(data[i, t] ^ data[i, t - 1])
                 else:
                     # Dep of neuron on other neuron at same timestep
-                    features[i * t, j] = ~(data[i, t] ^ data[j, t])
-    return features
+                    features[row, j] = ~(data[i, t] ^ data[j, t])
+    return features, labels
