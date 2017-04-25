@@ -5,20 +5,36 @@ import scipy.io as sio
 
 
 def get_dF_F1():
+    """Get raw dfF1 calcium imaging data.
+
+    Returns:
+        np.array: shape=(n, p), dtype=float
+    """
     dataset = sio.loadmat('Jan25_all_data_exp2.mat')
     data = dataset['dF_F1']
-    return data.astype('int64')
+    return data
 
 
-def binarize(data,):
-    d = np.std(data) + np.mean(data)
-    return ((data >= d) * np.ones(shape=data.shape)).T
+def binarize(data):
+    """Return data binarized: values >= mean + std ==> 1.
+
+    Args:
+        data (np.array): shape=(n, p), dtype=float
+
+    Returns:
+        np.array: shape=data.shape, dtype=int64
+    """
+    threshold = np.std(data) + np.mean(data)
+    binary = np.zeros_like(data, dtype=np.int8)
+    binary[data >= threshold] = 1
+    return binary
+
 
 def getEdges(data):
     n = data.shape[0]
-    edges = np.zeros(shape=((n*(n+1))/2, 2)).astype('int64')
+    edges = np.zeros(shape=((n*(n+1))/2, 2), dtype=np.int8)
     idx = 0
-    
+
     for i in range(0, n):
         for j in range(i+1, n):
             edges[idx][0] = i
@@ -28,4 +44,3 @@ def getEdges(data):
         edges[idx][1] = i
         idx += 1
     return edges
-
