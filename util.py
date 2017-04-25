@@ -25,14 +25,14 @@ def binarize(data):
         np.array: shape=data.shape, dtype=int64
     """
     threshold = np.std(data) + np.mean(data)
-    binary = np.zeros_like(data, dtype='int64')
+    binary = np.zeros_like(data, dtype=np.int8)
     binary[data >= threshold] = 1
     return binary
 
 
 def getEdges(data):
     n = data.shape[0]
-    edges = np.zeros(shape=((n*(n+1))/2, 2)).astype('int64')
+    edges = np.zeros(shape=((n*(n+1))/2, 2), dtype=np.int8)
     idx = 0
 
     for i in range(0, n):

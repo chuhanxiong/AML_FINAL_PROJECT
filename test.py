@@ -1,9 +1,11 @@
+import time
 import numpy as np
 from pystruct.models import GraphCRF
 from pystruct.learners import OneSlackSSVM
 from pystruct.inference import get_installed
 from util import *
 from features import simpleUndirected
+START_TIME = time.time()
 # debugging
 # from sklearn.datasets import load_iris
 # from sklearn.cross_validation import train_test_split
@@ -11,7 +13,7 @@ from features import simpleUndirected
 
 # iris = load_iris()
 # X, y = iris.data, iris.target
- 
+
 # X_ = [(np.atleast_2d(x), np.empty((0, 2), dtype=np.int)) for x in X]
 # Y = y.reshape(-1, 1)
 # print len(X_)
@@ -26,7 +28,8 @@ inference_method = get_installed(["qpbo", "ad3", "lp"])[0]
 
 data = get_dF_F1()
 print 'data shape', data.shape
-data = data[:,:50]
+data = data[:, :50]
+data = binarize(data)
 (n, p) = data.shape
 
 crf = GraphCRF(n_states=2, n_features=n, inference_method=inference_method)
@@ -47,9 +50,11 @@ print 'edges shape', edges.shape
 Y = labels
 X = zip(features, [edges]*len(features))
 
-labels[0] = np.zeros(n).astype('int64') + 1
+# labels[0] = np.zeros(n, dtype=np.int64) + 1
 print labels[0]
 print labels[1]
 
 print 'fitting the model'
 model.fit(X, Y)
+
+print("Total run time: {0:.2f} seconds".format(time.time() - start_time))
