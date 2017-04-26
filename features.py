@@ -73,10 +73,10 @@ def simpleUndirected(data):
                         # No data == no correlation
                         feature[i, i] = 0
                     else:
-                        feature[i, i] = ~(data[i, t] ^ data[i, t - 1])
+                        feature[i, i] = not (data[i, t] ^ data[i, t - 1])
                 else:
                     # Dep of neuron on other neuron at same timestep
-                    feature[i, j] = ~(data[i, t] ^ data[j, t])
+                    feature[i, j] = not (data[i, t] ^ data[j, t])
         features.append(feature)
         labels.append(label)
     return features, labels
@@ -114,10 +114,10 @@ def simpleUndirectedOneFeature(data):
                         # No data == no correlation
                         feature[idx, 0] = 0
                     else:
-                        feature[idx, 0] = ~(data[i, t] ^ data[i, t - 1])
+                        feature[idx, 0] = not (data[i, t] ^ data[i, t - 1])
                 else:
                     # Dep of neuron on other neuron at same timestep
-                    feature[idx, 0] = ~(data[i, t] ^ data[j, t])
+                    feature[idx, 0] = not (data[i, t] ^ data[j, t])
                 idx += 1
         feature[:, 1] = np.abs(feature[:, 0] - 1)
         features.append(feature)
