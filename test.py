@@ -35,7 +35,7 @@ data = binarize(data)
 print("We will use data of shape: {}".format((n, p)))
 
 # crf = GraphCRF(n_states=2, n_features=n, inference_method=inference_method)
-crf = GraphCRF(n_features=1, inference_method=inference_method)
+crf = GraphCRF(n_features=2, inference_method=inference_method)
 print 'get crf'
 
 if DEBUG:
