@@ -51,8 +51,8 @@ Y = labels
 X = zip(features, [edges]*len(features))
 
 # labels[0] = np.zeros(n, dtype=np.int64) + 1
-print labels[0]
-print labels[1]
+# print labels[0]
+# print labels[1]
 
 print 'fitting the model'
 model.fit(X, Y)
