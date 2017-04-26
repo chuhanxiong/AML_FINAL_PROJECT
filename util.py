@@ -30,15 +30,16 @@ def binarize(data):
     return binary
 
 
-def getEdges(data):
+def getEdges(data, self_edges=True):
     n = data.shape[0]
-    edges = np.zeros(shape=((n*(n+1))/2, 2), dtype=np.int8)
+    edges = np.zeros(shape=((n*(n+1))/2, 2), dtype=np.int16)
     idx = 0
 
     for i in range(0, n):
-        edges[idx][0] = i
-        edges[idx][1] = i
-        idx += 1
+        if self_edges:
+            edges[idx][0] = i
+            edges[idx][1] = i
+            idx += 1
         for j in range(i+1, n):
             edges[idx][0] = i
             edges[idx][1] = j
