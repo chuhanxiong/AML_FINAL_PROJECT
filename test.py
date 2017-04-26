@@ -5,6 +5,7 @@ from pystruct.learners import OneSlackSSVM
 from pystruct.inference import get_installed
 from util import *
 from features import simpleUndirected
+DEBUG = True
 START_TIME = time.time()
 # debugging
 # from sklearn.datasets import load_iris
@@ -27,15 +28,19 @@ START_TIME = time.time()
 inference_method = get_installed(["qpbo", "ad3", "lp"])[0]
 
 data = get_dF_F1()
-print 'data shape', data.shape
+print 'Original data shape', data.shape
 data = data[:, :50]
 data = binarize(data)
 (n, p) = data.shape
+print("We will use data of shape: {}".format((n, p)))
 
 crf = GraphCRF(n_states=2, n_features=n, inference_method=inference_method)
 print 'get crf'
 
-model = OneSlackSSVM(model=crf, max_iter=100, C=100, check_constraints=False)
+if DEBUG:
+    model = OneSlackSSVM(model=crf, max_iter=100, C=100, verbose=1)
+else:
+    model = OneSlackSSVM(model=crf, max_iter=100, C=100)
 print 'get model'
 
 features, labels = simpleUndirected(data)
@@ -43,9 +48,10 @@ print 'get features, labels'
 edges = getEdges(data)
 print 'get edges'
 
-print 'labels shape', len(labels), labels[0].shape
-print 'features shape', len(features), features[0].shape
-print 'edges shape', edges.shape
+print 'len(labels): {0}, labels[0].shape: {1}'.format(len(labels), labels[0].shape)
+print 'len(features): {0}, features[0].shape: {1}'.format(len(features), features[0].shape)
+print 'edges shape: ', edges.shape
+print("First 10 edges: {}".format(edges[:10]))
 
 Y = labels
 X = zip(features, [edges]*len(features))
@@ -54,7 +60,7 @@ X = zip(features, [edges]*len(features))
 # print labels[0]
 # print labels[1]
 
-print 'fitting the model'
+print 'fitting the model, runtime so far = {0:.2f}'.format(time.time() - START_TIME)
 model.fit(X, Y)
 
-print("Total run time: {0:.2f} seconds".format(time.time() - start_time))
+print("Total run time: {0:.2f} seconds".format(time.time() - START_TIME))
