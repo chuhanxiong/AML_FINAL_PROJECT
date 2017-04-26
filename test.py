@@ -1,6 +1,6 @@
 import time
 import numpy as np
-from pystruct.models import GraphCRF
+from pystruct.models import EdgeFeatureGraphCRF, GraphCRF
 from pystruct.learners import OneSlackSSVM
 from pystruct.inference import get_installed
 from util import *
@@ -29,13 +29,14 @@ inference_method = get_installed(["qpbo", "ad3", "lp"])[0]
 
 data = get_dF_F1()
 print 'Original data shape', data.shape
-data = data[:, :50]
+data = data[:55, :50]
 data = binarize(data)
 (n, p) = data.shape
 print("We will use data of shape: {}".format((n, p)))
 
 # crf = GraphCRF(n_states=2, n_features=n, inference_method=inference_method)
-crf = GraphCRF(n_features=2, inference_method=inference_method)
+# crf = GraphCRF(n_features=2, inference_method=inference_method)
+crf = EdgeFeatureGraphCRF(inference_method=inference_method)
 print 'get crf'
 
 if DEBUG:
@@ -45,22 +46,26 @@ else:
 print 'get model'
 
 # features, labels = simpleUndirected(data)
-features, labels = features.simpleUndirectedOneFeature(data)
+# features, labels, edges = features.simpleUndirectedOneFeature(data)
+node_features, labels, edges, edge_features = features.simpleOneNodeOneEdgeFeature(data)
 print 'get features, labels'
-edges = getEdges(data)
-print 'get edges'
+# edges = getEdges(data)
+print 'get edges, edge_features'
 
 print 'len(labels): {0}, labels[0].shape: {1}'.format(len(labels), labels[0].shape)
-print 'len(features): {0}, features[0].shape: {1}'.format(len(features), features[0].shape)
+print 'len(node_features): {0}, node_features[0].shape: {1}'.format(len(node_features),
+                                                                    node_features[0].shape)
 print 'edges shape: ', edges.shape
 print("First 10 edges: {}".format(edges[:10]))
+print 'len(edge_features): {0}, edge_features[0].shape: {1}'.format(len(edge_features),
+                                                                    edge_features[0].shape)
 
 Y = labels
-X = zip(features, [edges]*len(features))
+X = zip(node_features, [edges] * len(features), edge_features)
 
 # labels[0] = np.zeros(n, dtype=np.int64) + 1
-print "labels[0]:\n{}".format(labels[0])
-print "labels[1]:\n{}".format(labels[1])
+# print "labels[0]:\n{0:r}".format(labels[0])
+# print "labels[1]:\n{0:r}".format(labels[1])
 
 try:
     print("crf.size_joint_feature = {}".format(crf.size_joint_feature))

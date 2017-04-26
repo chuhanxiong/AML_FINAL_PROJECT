@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.7
 
 import numpy as np
+from util import getEdges
 # p = no of timesteps
 # n = no of neurons
 
@@ -124,3 +125,59 @@ def simpleUndirectedOneFeature(data):
         labels.append(label)
     assert idx == num_features, "Bad number of nodes, idx = {}".format(idx)
     return features, labels
+
+
+def simpleOneNodeOneEdgeFeature(data):
+    """Capture undirected correlations between all pairs of neurons.
+
+    For two distinct nodes (edge features), feature is ~XOR of two inputs (true
+    iff two neurons both firing or both not firing). Node feature (single node)
+    is the node's state at the previous timestep.
+    Both feature times are binarized.
+
+    n binary features per neuron: n - 1 edge features + 1 node feature. A n by
+    2n feature matrix per timestep.
+
+    Args:
+        data (np.array): (n, p) sized, for n neurons, p timesteps. Binarized.
+
+    Returns:
+        [np.array]: p length list of n^2x2 np.array feature matrix
+        [np.array]: p length list of n^2 length np.array label vectors
+    """
+    (n, p) = data.shape
+
+    # for each sample (neuron at a timestep), one feature per neuron
+    num_edges = (n * (n - 1)) / 2
+    node_features = []
+    labels = []
+    edges = getEdges(data, self_edges=False)
+    edge_features = []
+
+    for t in range(p):
+        node_feature = np.zeros((n, 2), dtype=np.int8)
+        label = np.zeros(n, dtype=np.int8)
+        edge_row = 0
+        edge_feature = np.zeros((num_edges, 2), dtype=np.int8)
+        for i in range(n):
+            label[i] = data[i, t]
+            for j in range(i, n):
+                if i == j:
+                    # Dep of neuron on itself at previous timestep
+                    if t == 0:
+                        # No data == no correlation
+                        node_feature[i, 0] = 0
+                    else:
+                        node_feature[i, 0] = not (data[i, t] ^ data[i, t - 1])
+                else:
+                    assert np.all(edges[edge_row] == [i, j]), (
+                        "edges[{2}] = {0}, [i, j] = {1}".format(edges[edge_row], [i, j], edge_row))
+                    # Dep of neuron on other neuron at same timestep
+                    edge_feature[edge_row, 0] = not (data[i, t] ^ data[j, t])
+                    edge_row += 1
+        node_feature[:, 1] = np.abs(node_feature[:, 0] - 1)
+        node_features.append(node_feature)
+        labels.append(label)
+        edge_feature[:, 1] = np.abs(edge_feature[:, 0] - 1)
+        edge_features.append(edge_feature)
+    return node_features, labels, edges, edge_features
