@@ -36,11 +36,11 @@ def getEdges(data):
     idx = 0
 
     for i in range(0, n):
+        edges[idx][0] = i
+        edges[idx][1] = i
+        idx += 1
         for j in range(i+1, n):
             edges[idx][0] = i
             edges[idx][1] = j
             idx += 1
-        edges[idx][0] = i
-        edges[idx][1] = i
-        idx += 1
     return edges
