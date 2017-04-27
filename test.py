@@ -58,10 +58,6 @@ print("First 10 edges: {}".format(edges[:10]))
 Y = labels
 X = zip(features, [edges]*len(features))
 
-# labels[0] = np.zeros(n, dtype=np.int64) + 1
-print "labels[0]:\n{}".format(labels[0])
-print "labels[1]:\n{}".format(labels[1])
-
 try:
     print("crf.size_joint_feature = {}".format(crf.size_joint_feature))
 except AttributeError as e:

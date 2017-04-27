@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.7
 
 import numpy as np
+from numpy.testing import assert_array_equal
 # p = no of timesteps
 # n = no of neurons
 
@@ -77,7 +78,11 @@ def simpleUndirected(data):
                 else:
                     # Dep of neuron on other neuron at same timestep
                     feature[i, j] = not (data[i, t] ^ data[j, t])
+        if len(features) > 0:
+            assert_array_equal(features[-1],feature)
         features.append(feature)
+        if len(labels) > 0:
+            assert_array_equal(labels[-1],label)
         labels.append(label)
     return features, labels
 
