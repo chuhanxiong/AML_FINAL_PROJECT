@@ -21,12 +21,12 @@ def simulatedData():
     Returns:
         ndarray, size=(num_neurons, timesteps): X
         ndarray, size=(num_neurons, num_neurons): A_True
-        list of indexes: A_True[unshuffle] will recover original arrangement.
+        list of indexes: A_True[unshuffle][:, unshuffle] will recover original arrangement.
     """
     num_neurons = 60
     timesteps = 10000
     spike_dur = 500
-    spike_strength = 1e-6
+    spike_strength = 1e-3
 
     def ABlock(n, sigma=0.2, connP=0.5, cap=0.2):
         A = np.random.normal(scale=0.2, size=(n, n))
@@ -48,8 +48,8 @@ def simulatedData():
     true_A[sl[2], sl[2]] = ABlock(num_neurons / 3)
 
     shuffle = np.random.permutation(num_neurons)
-    unshuffle = [np.nonzero(shuffle == x) for x in range(len(shuffle))]
-    shuf_A = true_A[shuffle]
+    unshuffle = [np.nonzero(shuffle == x)[0][0] for x in range(len(shuffle))]
+    shuf_A = true_A[shuffle][:, shuffle]
 
     # Stimulus only to cell group 1
     num_stim_neurons = 20
@@ -70,6 +70,7 @@ def simulatedData():
     for i in range(1, timesteps):
         X[:, i] = (np.dot(shuf_A, X[:, i - 1]) + np.dot(shuf_B, u[:, i]) +
                   np.random.multivariate_normal(mean=mu, cov=Q))
+        X[:, i] = np.sign(X[:, i]) * np.log(np.abs(X[:, i]))
 
     return X, shuf_A, unshuffle
 
