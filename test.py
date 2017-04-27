@@ -4,7 +4,7 @@ from pystruct.models import GraphCRF
 from pystruct.learners import OneSlackSSVM
 from pystruct.inference import get_installed
 from util import *
-from features import simpleUndirected
+import features
 DEBUG = True
 START_TIME = time.time()
 # debugging
@@ -34,16 +34,18 @@ data = binarize(data)
 (n, p) = data.shape
 print("We will use data of shape: {}".format((n, p)))
 
-crf = GraphCRF(n_states=2, n_features=n, inference_method=inference_method)
+# crf = GraphCRF(n_states=2, n_features=n, inference_method=inference_method)
+crf = GraphCRF(n_features=2, inference_method=inference_method)
 print 'get crf'
 
 if DEBUG:
-    model = OneSlackSSVM(model=crf, max_iter=100, C=100, verbose=1)
+    model = OneSlackSSVM(model=crf, max_iter=100, verbose=1, inference_cache=5)
 else:
-    model = OneSlackSSVM(model=crf, max_iter=100, C=100)
+    model = OneSlackSSVM(model=crf, max_iter=100)
 print 'get model'
 
-features, labels = simpleUndirected(data)
+# features, labels = simpleUndirected(data)
+features, labels = features.simpleUndirectedOneFeature(data)
 print 'get features, labels'
 edges = getEdges(data)
 print 'get edges'
@@ -56,11 +58,14 @@ print("First 10 edges: {}".format(edges[:10]))
 Y = labels
 X = zip(features, [edges]*len(features))
 
-# labels[0] = np.zeros(n, dtype=np.int64) + 1
-# print labels[0]
-# print labels[1]
+try:
+    print("crf.size_joint_feature = {}".format(crf.size_joint_feature))
+except AttributeError as e:
+    print("No crf.size_joint_feature: {}".format(e))
 
 print 'fitting the model, runtime so far = {0:.2f}'.format(time.time() - START_TIME)
 model.fit(X, Y)
+print("model.w.shape = {0}. model.w = {1}".format(model.w.shape, model.w))
+
 
 print("Total run time: {0:.2f} seconds".format(time.time() - START_TIME))
