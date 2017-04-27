@@ -15,7 +15,7 @@ def get_dF_F1():
     return data
 
 
-def simulatedData():
+def simulatedData(n=60, T=10000):
     """Produce simulated data, following Turaga et al.
 
     Returns:
@@ -23,8 +23,10 @@ def simulatedData():
         ndarray, size=(num_neurons, num_neurons): A_True
         list of indexes: A_True[unshuffle][:, unshuffle] will recover original arrangement.
     """
-    num_neurons = 60
-    timesteps = 10000
+    assert (n % 3) == 0, "n must be multiple of 3, given {}".format(n)
+    num_neurons = int(n)
+    block_n = num_neurons / 3
+    timesteps = T
     spike_dur = 500
     spike_strength = 1e-3
 
@@ -36,28 +38,29 @@ def simulatedData():
         return A
 
     true_A = np.zeros((num_neurons, num_neurons))
-    sl = [slice(0, 20), slice(20, 40), slice(40, 60)]
-    true_A[sl[0], sl[0]] = ABlock(num_neurons / 3)
-    true_A[sl[1], sl[0]] = np.abs(ABlock(num_neurons / 3))
-    true_A[sl[2], sl[0]] = ABlock(num_neurons / 3, connP=0.25)
+    sl = [slice(0, block_n), slice(block_n, 2 * block_n), slice(2 * block_n, 3 * block_n)]
+    true_A[sl[0], sl[0]] = ABlock(block_n)
+    true_A[sl[1], sl[0]] = np.abs(ABlock(block_n))
+    true_A[sl[2], sl[0]] = ABlock(block_n, connP=0.25)
     # true_A[sl[0], sl[1]] = np.zeros((num_neurons/3, num_neurons/3))
-    true_A[sl[1], sl[1]] = ABlock(num_neurons / 3)
-    true_A[sl[2], sl[1]] = np.abs(ABlock(num_neurons / 3, sigma=0.05, connP=0.4, cap=0.1))
-    true_A[sl[0], sl[2]] = -np.abs(ABlock(num_neurons / 3))
-    true_A[sl[1], sl[2]] = -np.abs(np.abs(ABlock(num_neurons / 3)))
-    true_A[sl[2], sl[2]] = ABlock(num_neurons / 3)
+    true_A[sl[1], sl[1]] = ABlock(block_n)
+    true_A[sl[2], sl[1]] = np.abs(ABlock(block_n, sigma=0.05, connP=0.4, cap=0.1))
+    true_A[sl[0], sl[2]] = -np.abs(ABlock(block_n))
+    true_A[sl[1], sl[2]] = -np.abs(np.abs(ABlock(block_n)))
+    true_A[sl[2], sl[2]] = ABlock(block_n)
 
+    # Shuffle A, no cheating due to neurons being prearranged
     shuffle = np.random.permutation(num_neurons)
     unshuffle = [np.nonzero(shuffle == x)[0][0] for x in range(len(shuffle))]
     shuf_A = true_A[shuffle][:, shuffle]
 
     # Stimulus only to cell group 1
-    num_stim_neurons = 20
+    num_stim_neurons = block_n
     B = np.zeros((num_neurons, num_stim_neurons))
     B[:num_stim_neurons] = 1
     shuf_B = B[shuffle]
 
-    # stimulus
+    # stimulus -- cycle between spike_strength and 0 every spike_dur frames
     u = np.zeros((num_stim_neurons, timesteps))
     u[:] = ([spike_strength] * spike_dur + [0] * spike_dur) * (timesteps / (spike_dur * 2))
 
@@ -69,7 +72,7 @@ def simulatedData():
     X[:, 0] = np.dot(shuf_B, u[:, 0]) + np.random.multivariate_normal(mean=mu, cov=Q)
     for i in range(1, timesteps):
         X[:, i] = (np.dot(shuf_A, X[:, i - 1]) + np.dot(shuf_B, u[:, i]) +
-                  np.random.multivariate_normal(mean=mu, cov=Q))
+                   np.random.multivariate_normal(mean=mu, cov=Q))
         X[:, i] = np.sign(X[:, i]) * np.log(np.abs(X[:, i]))
 
     return X, shuf_A, unshuffle
