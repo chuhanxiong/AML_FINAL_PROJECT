@@ -7,6 +7,7 @@ from util import *
 from features import simpleUndirected
 import matplotlib.pyplot as plt
 import random
+import pandas as pd
 
 def getEdgeFeatures(features, edges_shape):    
     edge_features = [None] * len(features)
@@ -84,6 +85,12 @@ print 'get model'
 
 features, labels = simpleUndirected(train_data)
 print 'get features, labels'
+
+# get adjacencyMatrix
+adjacencyMatrix = getAdjacencyMatrix(labels)
+df = pd.DataFrame(adjacencyMatrix)
+df.to_csv('adjacencyMatrix.csv', index=False, header=False)
+
 edges = getEdges(train_data)
 print 'get edges'
 edge_features = getEdgeFeatures(features, edges.shape)
@@ -122,6 +129,11 @@ plt.xlabel('neurons')
 plt.ylabel('mean correct rate')
 plt.title('Test neurons connectivities')
 plt.show()
+
+
+
+
+
 
 # print 'building sessions'
 # A = range(53)

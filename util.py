@@ -171,7 +171,7 @@ def getEdges(data, self_edges=True):
             idx += 1
     return edges
 
-def find_neuron_connectivities(neuron_idx, labels):
+def find_neuron_connectivities(neuron_idx, labels, getAdjacencyList=False):
     p, n = labels.shape
     group_one = dict()
     group_zero = dict()
@@ -197,6 +197,19 @@ def find_neuron_connectivities(neuron_idx, labels):
         else:
             scores[group_one[t]] += 1
     scores[neuron_idx] = -1
-    if np.amax(scores) == 0:
-        return []    
-    return np.argwhere(scores == np.amax(scores)).flatten().tolist()
+    
+    if getAdjacencyList:
+        l = np.zeros((n,))
+        l[scores == np.amax(scores)] = 1
+        return l
+    else:        
+        if np.amax(scores) == 0:
+            return []    
+        return np.argwhere(scores == np.amax(scores)).flatten().tolist()
+
+def getAdjacencyMatrix(labels):
+    p, n = labels.shape
+    mat = np.zeros((n,n))
+    for neuron_idx in range(n):
+        mat[neuron_idx,:] = find_neuron_connectivities(neuron_idx, labels, True)
+    return mat
