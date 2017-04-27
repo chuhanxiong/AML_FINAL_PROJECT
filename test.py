@@ -5,7 +5,7 @@ from pystruct.learners import OneSlackSSVM
 from pystruct.inference import get_installed
 from util import *
 from features import simpleUndirected
-DEBUG = True
+DEBUG = False
 START_TIME = time.time()
 # debugging
 # from sklearn.datasets import load_iris
@@ -38,9 +38,10 @@ crf = GraphCRF(n_states=2, n_features=n, inference_method=inference_method)
 print 'get crf'
 
 if DEBUG:
-    model = OneSlackSSVM(model=crf, max_iter=100, C=100, verbose=1)
-else:
-    model = OneSlackSSVM(model=crf, max_iter=100, C=100)
+    print 'DEBUG'
+    model = OneSlackSSVM(model=crf, max_iter=100, C=100, verbose=1, check_constraints=False)
+else:    
+    model = OneSlackSSVM(model=crf, max_iter=10, C=100, check_constraints=False)
 print 'get model'
 
 features, labels = simpleUndirected(data)
@@ -56,11 +57,8 @@ print("First 10 edges: {}".format(edges[:10]))
 Y = labels
 X = zip(features, [edges]*len(features))
 
-# labels[0] = np.zeros(n, dtype=np.int64) + 1
-# print labels[0]
-# print labels[1]
-
 print 'fitting the model, runtime so far = {0:.2f}'.format(time.time() - START_TIME)
 model.fit(X, Y)
-
 print("Total run time: {0:.2f} seconds".format(time.time() - START_TIME))
+print 'weights'
+print model.w
