@@ -15,6 +15,65 @@ def get_dF_F1():
     return data
 
 
+def simulatedData():
+    """Produce simulated data, following Turaga et al.
+
+    Returns:
+        ndarray, size=(num_neurons, timesteps): X
+        ndarray, size=(num_neurons, num_neurons): A_True
+        list of indexes: A_True[unshuffle] will recover original arrangement.
+    """
+    num_neurons = 60
+    timesteps = 10000
+    spike_dur = 500
+    spike_strength = 1e-6
+
+    def ABlock(n, sigma=0.2, connP=0.5, cap=0.2):
+        A = np.random.normal(scale=0.2, size=(n, n))
+        A[np.random.rand(n, n) >= connP] = 0
+        A[A > cap] = cap
+        A[A < -cap] = -cap
+        return A
+
+    true_A = np.zeros((num_neurons, num_neurons))
+    sl = [slice(0, 20), slice(20, 40), slice(40, 60)]
+    true_A[sl[0], sl[0]] = ABlock(num_neurons / 3)
+    true_A[sl[1], sl[0]] = np.abs(ABlock(num_neurons / 3))
+    true_A[sl[2], sl[0]] = ABlock(num_neurons / 3, connP=0.25)
+    # true_A[sl[0], sl[1]] = np.zeros((num_neurons/3, num_neurons/3))
+    true_A[sl[1], sl[1]] = ABlock(num_neurons / 3)
+    true_A[sl[2], sl[1]] = np.abs(ABlock(num_neurons / 3, sigma=0.05, connP=0.4, cap=0.1))
+    true_A[sl[0], sl[2]] = -np.abs(ABlock(num_neurons / 3))
+    true_A[sl[1], sl[2]] = -np.abs(np.abs(ABlock(num_neurons / 3)))
+    true_A[sl[2], sl[2]] = ABlock(num_neurons / 3)
+
+    shuffle = np.random.permutation(num_neurons)
+    unshuffle = [np.nonzero(shuffle == x) for x in range(len(shuffle))]
+    shuf_A = true_A[shuffle]
+
+    # Stimulus only to cell group 1
+    num_stim_neurons = 20
+    B = np.zeros((num_neurons, num_stim_neurons))
+    B[:num_stim_neurons] = 1
+    shuf_B = B[shuffle]
+
+    # stimulus
+    u = np.zeros((num_stim_neurons, timesteps))
+    u[:] = ([spike_strength] * spike_dur + [0] * spike_dur) * (timesteps / (spike_dur * 2))
+
+    # neural noise
+    mu = np.zeros(num_neurons)
+    Q = np.eye(num_neurons)
+
+    X = np.zeros((num_neurons, timesteps))
+    X[:, 0] = np.dot(shuf_B, u[:, 0]) + np.random.multivariate_normal(mean=mu, cov=Q)
+    for i in range(1, timesteps):
+        X[:, i] = (np.dot(shuf_A, X[:, i - 1]) + np.dot(shuf_B, u[:, i]) +
+                  np.random.multivariate_normal(mean=mu, cov=Q))
+
+    return X, shuf_A, unshuffle
+
+
 def binarize(data):
     """Return data binarized: values >= mean + std ==> 1.
 
@@ -97,7 +156,7 @@ def sessionize(data, num_sessions=3, neuron_split=None, time_split=None, overlap
 
 def getEdges(data, self_edges=True):
     n = data.shape[0]
-    edges = np.zeros(shape=((n*(n+1))/2, 2), dtype=np.int16)
+    edges = np.zeros(shape=((n * (n + 1)) / 2, 2), dtype=np.int16)
     idx = 0
 
     for i in range(0, n):
@@ -105,7 +164,7 @@ def getEdges(data, self_edges=True):
             edges[idx][0] = i
             edges[idx][1] = i
             idx += 1
-        for j in range(i+1, n):
+        for j in range(i + 1, n):
             edges[idx][0] = i
             edges[idx][1] = j
             idx += 1
