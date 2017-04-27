@@ -27,11 +27,12 @@ inference_method = get_installed(["qpbo", "ad3", "lp"])[0]
 
 data = get_dF_F1()
 print 'Original data shape', data.shape
-test_data = data[:,50:200]
+test_data = data[:,10000:10150]
 test_data = binarize(test_data)
 
 train_data = data[:, :50]
 train_data = binarize(train_data)
+
 (n, p) = train_data.shape
 print("We will use train_data of shape: {}".format((n, p)))
 
@@ -68,9 +69,9 @@ print 'initializing crf'
 crf.initialize(train_X, train_Y)
 
 print 'building sessions'
-A = range(67)
-B = range(67, 120)
-C = range(120, n)
+A = range(53)
+B = range(53, 105)
+C = range(105, n)
 
 sessionA = test_data[:,:50]
 sessionA[B+C,:] = 0
@@ -101,10 +102,10 @@ print 'doing the inference'
 
 print 'test sessionA'
 A_correct_rate_list = []
-for x, y in zip(A_X, A_Y):
-    y_hat = crf.inference(x, w)    
+for x, y in zip(A_X, A_Y):   
+    y_hat = crf.inference(x, w)
     correct_rate = np.zeros(shape=(y_hat.shape))
-    correct_rate[y_hat==y] = 1    
+    correct_rate[y_hat==y] = 1
     A_correct_rate_list.append(np.sum(correct_rate)/(1.0*len(correct_rate)))
     print 'correct_rate', A_correct_rate_list[-1]
 print 'A_correct_rate_mean:', np.mean(A_correct_rate_list)
@@ -112,9 +113,9 @@ print 'A_correct_rate_mean:', np.mean(A_correct_rate_list)
 print 'test sessionB'
 B_correct_rate_list = []
 for x, y in zip(B_X, B_Y):
-    y_hat = crf.inference(x, w)    
+    y_hat = crf.inference(x, w)
     correct_rate = np.zeros(shape=(y_hat.shape))
-    correct_rate[y_hat==y] = 1    
+    correct_rate[y_hat==y] = 1
     B_correct_rate_list.append(np.sum(correct_rate)/(1.0*len(correct_rate)))
     print 'correct_rate', B_correct_rate_list[-1]
 print 'B_correct_rate_mean:', np.mean(B_correct_rate_list)
@@ -127,4 +128,4 @@ for x, y in zip(C_X, C_Y):
     correct_rate[y_hat==y] = 1    
     C_correct_rate_list.append(np.sum(correct_rate)/(1.0*len(correct_rate)))
     print 'correct_rate', C_correct_rate_list[-1]
-print 'C_correct_rate_mean:', np.mean(C_correct_rate_list) 
+print 'C_correct_rate_mean:', np.mean(C_correct_rate_list)
