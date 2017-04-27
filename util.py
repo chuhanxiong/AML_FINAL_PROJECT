@@ -45,3 +45,33 @@ def getEdges(data, self_edges=True):
             edges[idx][1] = j
             idx += 1
     return edges
+
+def find_neuron_connectivities(neuron_idx, labels):
+    p, n = labels.shape
+    group_one = dict()
+    group_zero = dict()
+    for t in range(p):
+        for i in range(n):
+            if labels[t, i] == 1:
+                if t not in group_one:
+                    group_one[t] = [i]
+                else:
+                    group_one[t].append(i)
+
+            else:
+                if t not in group_zero:
+                    group_zero[t] = [i]
+                else:
+                    group_zero[t].append(i)
+
+    scores = np.zeros((n,))
+    for t in range(p):
+        if neuron_idx not in group_one[t]:
+            # in group_zero
+            scores[group_zero[t]] += 1
+        else:
+            scores[group_one[t]] += 1
+    scores[neuron_idx] = -1
+    if np.amax(scores) == 0:
+        return []    
+    return np.argwhere(scores == np.amax(scores)).flatten().tolist()
