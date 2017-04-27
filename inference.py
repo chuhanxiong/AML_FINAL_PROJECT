@@ -1,9 +1,12 @@
 import numpy as np
+from numpy.testing import assert_array_equal
 from pystruct.models import EdgeFeatureGraphCRF
 from pystruct.learners import OneSlackSSVM
 from pystruct.inference import get_installed
 from util import *
 from features import simpleUndirected
+import matplotlib.pyplot as plt
+import random
 
 def getEdgeFeatures(features, edges_shape):    
     edge_features = [None] * len(features)
@@ -19,15 +22,52 @@ def getEdgeFeatures(features, edges_shape):
             efs[idx][0] = f[i, i]
             efs[idx][1] = f[i, i]
             idx += 1
+        
         edge_features[e_f_idex] = efs
         e_f_idex += 1
     return edge_features
+
+def test_connectivites_for_neuron(neuron_idx, edges, labels, test_data, w):
+    print 'test_connectivites_for_neuron', neuron_idx
+    brothers = find_neuron_connectivities(neuron_idx,labels)
+    if brothers == []:
+        print 'no connectivities found for neuron', neuron_idx
+        return -1
+    else:
+        print 'brothers for', neuron_idx, 'are', brothers
+        session = test_data[:,:50]
+        features, labels = simpleUndirected(session)
+        edge_features = getEdgeFeatures(features, edges.shape)
+        X = list(zip(features, [edges]*len(features), edge_features))
+      
+        (p, n, n) = features.shape
+        for t in range(p):
+            temp = features[t,:,:]
+            temp[brothers,:] = temp[neuron_idx,:]        
+            
+        modified_edge_features = getEdgeFeatures(features, edges.shape)
+        X_prime = list(zip(features, [edges]*len(features), modified_edge_features))
+        
+        correct_rate_list = []
+        for t in range(p):
+            x = X[t]
+            y = crf.inference(x, w)
+            x_prime = X_prime[t]
+            y_hat = crf.inference(x_prime, w)
+            correct_rate = np.zeros(shape=(y_hat.shape))
+            correct_rate[y_hat==y] = 1
+            correct_rate_list.append(np.sum(correct_rate)/(1.0*len(correct_rate)))
+            print 'correct_rate at time', t, 'is', correct_rate_list[-1]
+        avg = np.mean(correct_rate_list)
+        print 'neuron', neuron_idx, 'correct_rate_mean:', avg
+        return avg
 
 inference_method = get_installed(["qpbo", "ad3", "lp"])[0]
 
 data = get_dF_F1()
 print 'Original data shape', data.shape
-test_data = data[:,10000:10150]
+test_start_idx = random.randint(50, data.shape[1])
+test_data = data[:,test_start_idx:test_start_idx+50]
 test_data = binarize(test_data)
 
 train_data = data[:, :50]
@@ -68,64 +108,79 @@ w = np.asarray(w, dtype='float32')
 print 'initializing crf'
 crf.initialize(train_X, train_Y)
 
-print 'building sessions'
-A = range(53)
-B = range(53, 105)
-C = range(105, n)
+print 'test neurons connectivities'
+valid_neurons = []
+avgs = []
+for neuron_idx in range(n):
+    res = test_connectivites_for_neuron(neuron_idx, edges, labels, test_data, w)
+    if res != -1:
+        valid_neurons.append(neuron_idx)
+        avgs.append(res)
 
-sessionA = test_data[:,:50]
-sessionA[B+C,:] = 0
-print 'sessionA shape', sessionA.shape
-print 'non-zero entries', np.sum(sessionA)
-A_features, A_Y = simpleUndirected(sessionA)
-A_edge_features = getEdgeFeatures(A_features, edges.shape)
-A_X = list(zip(A_features, [edges]*len(A_features), A_edge_features))
+plt.plot(valid_neurons, avgs)
+plt.xlabel('neurons')
+plt.ylabel('mean correct rate')
+plt.title('Test neurons connectivities')
+plt.show()
 
-sessionB = test_data[:,50:100]
-sessionB[A+C,:] = 0
-print 'sessionB shape', sessionB.shape
-print 'non-zero entries', np.sum(sessionB)
-B_features, B_Y = simpleUndirected(sessionB)
-B_edge_features = getEdgeFeatures(B_features, edges.shape)
-B_X = list(zip(B_features, [edges]*len(B_features), B_edge_features))
+# print 'building sessions'
+# A = range(53)
+# B = range(53, 105)
+# C = range(105, n)
 
-sessionC = test_data[:,100:]
-sessionC[A+B,:] = 0
-print 'sessionC shape', sessionC.shape
-print 'non-zero entries', np.sum(sessionC)
-C_features, C_Y = simpleUndirected(sessionC)
-C_edge_features = getEdgeFeatures(C_features, edges.shape)
-C_X = list(zip(C_features, [edges]*len(C_features), C_edge_features))
+# sessionA = test_data[:,:50]
+# sessionA[B+C,:] = 0
+# print 'sessionA shape', sessionA.shape
+# print 'non-zero entries', np.sum(sessionA)
+# A_features, A_Y = simpleUndirected(sessionA)
+# A_edge_features = getEdgeFeatures(A_features, edges.shape)
+# A_X = list(zip(A_features, [edges]*len(A_features), A_edge_features))
+
+# sessionB = test_data[:,50:100]
+# sessionB[A+C,:] = 0
+# print 'sessionB shape', sessionB.shape
+# print 'non-zero entries', np.sum(sessionB)
+# B_features, B_Y = simpleUndirected(sessionB)
+# B_edge_features = getEdgeFeatures(B_features, edges.shape)
+# B_X = list(zip(B_features, [edges]*len(B_features), B_edge_features))
+
+# sessionC = test_data[:,100:]
+# sessionC[A+B,:] = 0
+# print 'sessionC shape', sessionC.shape
+# print 'non-zero entries', np.sum(sessionC)
+# C_features, C_Y = simpleUndirected(sessionC)
+# C_edge_features = getEdgeFeatures(C_features, edges.shape)
+# C_X = list(zip(C_features, [edges]*len(C_features), C_edge_features))
 
 
-print 'doing the inference'
+# print 'doing the inference'
 
-print 'test sessionA'
-A_correct_rate_list = []
-for x, y in zip(A_X, A_Y):   
-    y_hat = crf.inference(x, w)
-    correct_rate = np.zeros(shape=(y_hat.shape))
-    correct_rate[y_hat==y] = 1
-    A_correct_rate_list.append(np.sum(correct_rate)/(1.0*len(correct_rate)))
-    print 'correct_rate', A_correct_rate_list[-1]
-print 'A_correct_rate_mean:', np.mean(A_correct_rate_list)
+# print 'test sessionA'
+# A_correct_rate_list = []
+# for x, y in zip(A_X, A_Y):   
+#     y_hat = crf.inference(x, w)
+#     correct_rate = np.zeros(shape=(y_hat.shape))
+#     correct_rate[y_hat==y] = 1
+#     A_correct_rate_list.append(np.sum(correct_rate)/(1.0*len(correct_rate)))
+#     print 'correct_rate', A_correct_rate_list[-1]
+# print 'A_correct_rate_mean:', np.mean(A_correct_rate_list)
 
-print 'test sessionB'
-B_correct_rate_list = []
-for x, y in zip(B_X, B_Y):
-    y_hat = crf.inference(x, w)
-    correct_rate = np.zeros(shape=(y_hat.shape))
-    correct_rate[y_hat==y] = 1
-    B_correct_rate_list.append(np.sum(correct_rate)/(1.0*len(correct_rate)))
-    print 'correct_rate', B_correct_rate_list[-1]
-print 'B_correct_rate_mean:', np.mean(B_correct_rate_list)
+# print 'test sessionB'
+# B_correct_rate_list = []
+# for x, y in zip(B_X, B_Y):
+#     y_hat = crf.inference(x, w)
+#     correct_rate = np.zeros(shape=(y_hat.shape))
+#     correct_rate[y_hat==y] = 1
+#     B_correct_rate_list.append(np.sum(correct_rate)/(1.0*len(correct_rate)))
+#     print 'correct_rate', B_correct_rate_list[-1]
+# print 'B_correct_rate_mean:', np.mean(B_correct_rate_list)
 
-print 'test sessionC'
-C_correct_rate_list = []
-for x, y in zip(C_X, C_Y):
-    y_hat = crf.inference(x, w)
-    correct_rate = np.zeros(shape=(y_hat.shape))
-    correct_rate[y_hat==y] = 1    
-    C_correct_rate_list.append(np.sum(correct_rate)/(1.0*len(correct_rate)))
-    print 'correct_rate', C_correct_rate_list[-1]
-print 'C_correct_rate_mean:', np.mean(C_correct_rate_list)
+# print 'test sessionC'
+# C_correct_rate_list = []
+# for x, y in zip(C_X, C_Y):
+#     y_hat = crf.inference(x, w)
+#     correct_rate = np.zeros(shape=(y_hat.shape))
+#     correct_rate[y_hat==y] = 1    
+#     C_correct_rate_list.append(np.sum(correct_rate)/(1.0*len(correct_rate)))
+#     print 'correct_rate', C_correct_rate_list[-1]
+# print 'C_correct_rate_mean:', np.mean(C_correct_rate_list)
