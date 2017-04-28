@@ -24,10 +24,11 @@ def simulatedData(n=60, T=10000):
         list of indexes: A_True[unshuffle][:, unshuffle] will recover original arrangement.
     """
     assert (n % 3) == 0, "n must be multiple of 3, given {}".format(n)
+    assert (T % 2) == 0, "T must be multiple of 2, given {}".format(T)
     num_neurons = int(n)
     block_n = num_neurons / 3
     timesteps = T
-    spike_dur = 500
+    spike_dur = min(500, timesteps / 2)
     spike_strength = 1e-3
 
     def ABlock(n, sigma=0.2, connP=0.5, cap=0.2):
@@ -200,14 +201,14 @@ def find_neuron_connectivities(neuron_idx, labels, getAdjacencyList=False):
         else:
             scores[group_one[t]] += 1
     scores[neuron_idx] = -1
-    
+
     if getAdjacencyList:
         l = np.zeros((n,))
         l[scores == np.amax(scores)] = 1
         return l
-    else:        
+    else:
         if np.amax(scores) == 0:
-            return []    
+            return []
         return np.argwhere(scores == np.amax(scores)).flatten().tolist()
 
 def getAdjacencyMatrix(labels):
