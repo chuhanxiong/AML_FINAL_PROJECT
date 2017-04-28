@@ -2,7 +2,7 @@
 
 import numpy as np
 import scipy.io as sio
-
+import math
 
 def get_dF_F1():
     """Get raw dfF1 calcium imaging data.
@@ -51,6 +51,7 @@ def simulatedData(n=60, T=10000):
     true_A[sl[2], sl[2]] = ABlock(block_n)
 
     # Shuffle A, no cheating due to neurons being prearranged
+    true_A = np.abs(true_A)
     shuffle = np.random.permutation(num_neurons)
     unshuffle = [np.nonzero(shuffle == x)[0][0] for x in range(len(shuffle))]
     shuf_A = true_A[shuffle][:, shuffle]
@@ -195,21 +196,23 @@ def find_neuron_connectivities(neuron_idx, labels, getAdjacencyList=False):
 
     scores = np.zeros((n,))
     for t in range(p):
-        if neuron_idx not in group_one[t]:
+        if t in group_zero and neuron_idx in group_zero[t]:
             # in group_zero
             scores[group_zero[t]] += 1
         else:
             scores[group_one[t]] += 1
-    scores[neuron_idx] = -1
-
+    scores[neuron_idx] = -1    
+   
+    threshold = p/2.0 + 4*math.sqrt(p*.25)
+   
     if getAdjacencyList:
         l = np.zeros((n,))
-        l[scores == np.amax(scores)] = 1
+        l[scores > threshold] = 1
         return l
     else:
         if np.amax(scores) == 0:
             return []
-        return np.argwhere(scores == np.amax(scores)).flatten().tolist()
+        return np.argwhere(scores > threshold).flatten().tolist()
 
 def getAdjacencyMatrix(labels):
     p, n = labels.shape

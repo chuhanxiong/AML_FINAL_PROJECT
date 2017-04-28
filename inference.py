@@ -64,30 +64,31 @@ def test_connectivites_for_neuron(neuron_idx, edges, labels, session, w):
 
 inference_method = get_installed(["qpbo", "ad3", "lp"])[0]
 
-time_frame = 100
-print 'time_frame is', time_frame
-data = get_dF_F1()
-print 'Original data shape', data.shape
-test_start_idx = random.randint(time_frame, data.shape[1])
-test_data = data[:,test_start_idx:test_start_idx+time_frame]
-test_data = binarize(test_data)
+# time_frame = 100
+# print 'time_frame is', time_frame
+# data = get_dF_F1()
+# print 'Original data shape', data.shape
+# test_start_idx = random.randint(time_frame, data.shape[1])
+# test_data = data[:,test_start_idx:test_start_idx+time_frame]
+# test_data = binarize(test_data)
 
-train_data = data[:, :time_frame]
-train_data = binarize(train_data)
-
-
+# train_data = data[:, :time_frame]
+# train_data = binarize(train_data)
 
 
-# X, shuf_A_true, unshuffle = simulatedData(n=18, T=100)
-# A_true = shuf_A_true[unshuffle][:, unshuffle]
-# X_data = binarize(X[unshuffle])
-# train_size = 200
-# test_size = 200
-# X_train = sessionize(X_data[:, :train_size], num_sessions=2)[0]
-# X_test = X_data[:, -test_size:]
 
-# train_data = X_train
-# test_data = X_test
+
+X, shuf_A_true, unshuffle = simulatedData(n=18, T=1000)
+A_true = shuf_A_true[unshuffle][:, unshuffle]
+A_true[A_true != 0] = 1
+X_data = binarize(X[unshuffle])
+train_size = 200
+test_size = 200
+X_train = sessionize(X_data[:, :train_size], num_sessions=2)[0]
+X_test = X_data[:, -test_size:]
+
+train_data = X_train
+test_data = X_test
 
 
 
@@ -109,24 +110,45 @@ adjacencyMatrix = getAdjacencyMatrix(labels)
 # df.to_csv('adjacencyMatrix.csv', index=False, header=False)
 list1x = []
 list1y = []
-for i in range(0,20):
-    for j in range(0,20):
+s1 = set()
+print adjacencyMatrix.shape
+for i in range(adjacencyMatrix.shape[0]):
+    for j in range(adjacencyMatrix.shape[1]):
         if adjacencyMatrix[i, j] == 1:
             list1x.append(i)
             list1y.append(j)
+            s1.add((i, j))
 
-# list2x = []
-# list2y = []
-# for i in range(A_true.shape[0]):
-#     for j in range(A_true.shape[1]):
-#         if A_true[i, j] == 1:
-#             list2x.add(i)
-#             list2y.add(j)
+# plt.scatter(list1x, list1y, c='r')
+# plt.show()
 
-plt.scatter(list1x, list1y, c='r')
+list2x = []
+list2y = []
+s2 = set()
+print A_true.shape
+for i in range(A_true.shape[0]):
+    for j in range(A_true.shape[1]):
+        if A_true[i, j] == 1:
+            list2x.append(i)
+            list2y.append(j)
+            s2.add((i, j))
+
 # plt.scatter(list2x, list2y, c='b')
-plt.show()
+# plt.show()
 
+s3 = s1.intersection(s2)
+list3x = []
+list3y = []
+for x,y in s3:
+    list3x.append(x)
+    list3y.append(y)
+
+
+# plt.scatter(list3x, list3y, c='g')
+# plt.show()
+
+print 'overlap rate for s2', 1.0*len(s3)/len(s2) #60%
+print 'overlap rate for s1', 1.0*len(s3)/len(s1) #40%
 # edges = getEdges(train_data)
 # print 'get edges'
 # edge_features = getEdgeFeatures(features, edges.shape)
