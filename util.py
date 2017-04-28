@@ -27,8 +27,8 @@ def simulatedData(n=60, T=10000):
     assert (T % 2) == 0, "T must be multiple of 2, given {}".format(T)
     num_neurons = int(n)
     block_n = num_neurons / 3
-    timesteps = T
-    spike_dur = min(500, timesteps / 2)
+    timesteps = int(T)
+    spike_dur = min(200, timesteps / 2)
     spike_strength = 1e-3
 
     def ABlock(n, sigma=0.2, connP=0.5, cap=0.2):
