@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import random
 import pandas as pd
 
-def getEdgeFeatures(features, edges_shape):    
+def getEdgeFeatures(features, edges_shape):
     edge_features = [None] * len(features)
     e_f_idex = 0
     for f in features:
@@ -23,7 +23,7 @@ def getEdgeFeatures(features, edges_shape):
             efs[idx][0] = f[i, i]
             efs[idx][1] = f[i, i]
             idx += 1
-        
+
         edge_features[e_f_idex] = efs
         e_f_idex += 1
     return edge_features
@@ -35,19 +35,19 @@ def test_connectivites_for_neuron(neuron_idx, edges, labels, session, w):
         print 'no connectivities found for neuron', neuron_idx
         return -1
     else:
-        print 'brothers for', neuron_idx, 'are', brothers        
+        print 'brothers for', neuron_idx, 'are', brothers
         features, labels = simpleUndirected(session)
         edge_features = getEdgeFeatures(features, edges.shape)
         X = list(zip(features, [edges]*len(features), edge_features))
-      
+
         (p, n, n) = features.shape
         for t in range(p):
             temp = features[t,:,:]
-            temp[brothers,:] = temp[neuron_idx,:]        
-            
+            temp[brothers,:] = temp[neuron_idx,:]
+
         modified_edge_features = getEdgeFeatures(features, edges.shape)
         X_prime = list(zip(features, [edges]*len(features), modified_edge_features))
-        
+
         correct_rate_list = []
         for t in range(p):
             x = X[t]
@@ -82,9 +82,11 @@ X, shuf_A_true, unshuffle = simulatedData(n=18, T=1000)
 A_true = shuf_A_true[unshuffle][:, unshuffle]
 A_true[A_true != 0] = 1
 X_data = binarize(X[unshuffle])
+print X_data
 train_size = 200
 test_size = 200
-X_train = sessionize(X_data[:, :train_size], num_sessions=2)[0]
+# X_train = sessionize(X_data[:, :train_size], num_sessions=2)[0]
+X_train = X_data
 X_test = X_data[:, -test_size:]
 
 train_data = X_train
@@ -106,6 +108,8 @@ print 'get features, labels'
 
 # get adjacencyMatrix
 adjacencyMatrix = getAdjacencyMatrix(labels)
+adjMatrixBothOnes = np.dot(labels.T, labels)
+            
 # df = pd.DataFrame(adjacencyMatrix)
 # df.to_csv('adjacencyMatrix.csv', index=False, header=False)
 list1x = []
@@ -132,7 +136,12 @@ for i in range(A_true.shape[0]):
             list2x.append(i)
             list2y.append(j)
             s2.add((i, j))
-
+n = A_true.shape[0]
+assert adjacencyMatrix.shape[0] == n
+TP = np.count_nonzero(A_true[~np.eye(n, dtype=bool)] == adjacencyMatrix[~np.eye(n, dtype=bool)])
+TP = np.float(TP)
+print("Precision: {0:.2f}%".format(TP / np.count_nonzero(adjacencyMatrix[~np.eye(n, dtype=bool)])))
+print("Recall: {0:.2f}%".format(TP / np.count_nonzero(A_true[~np.eye(n, dtype=bool)])))
 # plt.scatter(list2x, list2y, c='b')
 # plt.show()
 
@@ -226,7 +235,7 @@ print 'overlap rate for s1', 1.0*len(s3)/len(s1) #40%
 
 # print 'test sessionA'
 # A_correct_rate_list = []
-# for x, y in zip(A_X, A_Y):   
+# for x, y in zip(A_X, A_Y):
 #     y_hat = crf.inference(x, w)
 #     correct_rate = np.zeros(shape=(y_hat.shape))
 #     correct_rate[y_hat==y] = 1
@@ -249,7 +258,7 @@ print 'overlap rate for s1', 1.0*len(s3)/len(s1) #40%
 # for x, y in zip(C_X, C_Y):
 #     y_hat = crf.inference(x, w)
 #     correct_rate = np.zeros(shape=(y_hat.shape))
-#     correct_rate[y_hat==y] = 1    
+#     correct_rate[y_hat==y] = 1
 #     C_correct_rate_list.append(np.sum(correct_rate)/(1.0*len(correct_rate)))
 #     print 'correct_rate', C_correct_rate_list[-1]
 # print 'C_correct_rate_mean:', np.mean(C_correct_rate_list)

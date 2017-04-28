@@ -25,10 +25,12 @@ def simulatedData(n=60, T=10000):
     """
     assert (n % 3) == 0, "n must be multiple of 3, given {}".format(n)
     assert (T % 2) == 0, "T must be multiple of 2, given {}".format(T)
+    strict_pos = True
     num_neurons = int(n)
     block_n = num_neurons / 3
     timesteps = int(T)
-    spike_dur = min(200, timesteps / 2)
+#    spike_dur = min(200, timesteps / 2)
+    spike_dur = min(500, timesteps / 2)
     spike_strength = 1e-3
 
     def ABlock(n, sigma=0.2, connP=0.5, cap=0.2):
@@ -50,6 +52,9 @@ def simulatedData(n=60, T=10000):
     true_A[sl[1], sl[2]] = -np.abs(np.abs(ABlock(block_n)))
     true_A[sl[2], sl[2]] = ABlock(block_n)
 
+    if strict_pos:
+        true_A = np.abs(true_A)
+#        true_A[true_A < 0] = 0
     # Shuffle A, no cheating due to neurons being prearranged
     true_A = np.abs(true_A)
     shuffle = np.random.permutation(num_neurons)
@@ -64,7 +69,8 @@ def simulatedData(n=60, T=10000):
 
     # stimulus -- cycle between spike_strength and 0 every spike_dur frames
     u = np.zeros((num_stim_neurons, timesteps))
-    u[:] = ([spike_strength] * spike_dur + [0] * spike_dur) * (timesteps / (spike_dur * 2))
+    u[:spike_dur * (timesteps / spike_dur)] = (([spike_strength] * spike_dur + [0] * spike_dur) *
+                                               (timesteps / (spike_dur * 2)))
 
     # neural noise
     mu = np.zeros(num_neurons)
@@ -198,13 +204,17 @@ def find_neuron_connectivities(neuron_idx, labels, getAdjacencyList=False):
     for t in range(p):
         if t in group_zero and neuron_idx in group_zero[t]:
             # in group_zero
-            scores[group_zero[t]] += 1
+#            scores[group_zero[t]] += 1
+            pass
         else:
             scores[group_one[t]] += 1
-    scores[neuron_idx] = -1    
-   
-    threshold = p/2.0 + 4*math.sqrt(p*.25)
-   
+    scores[neuron_idx] = -1
+#    print("neuron {0}, scores =\n{1}".format(neuron_idx, scores))
+#    threshold = p/2.0 + 4*math.sqrt(p*.25)
+    density = np.mean(labels)
+    prob = density ** 2 # Probability of two neurons randomly firing same timestep
+    threshold = p*prob + math.sqrt(p*(prob ** 2))
+
     if getAdjacencyList:
         l = np.zeros((n,))
         l[scores > threshold] = 1
@@ -218,5 +228,5 @@ def getAdjacencyMatrix(labels):
     p, n = labels.shape
     mat = np.zeros((n,n))
     for neuron_idx in range(n):
-        mat[neuron_idx,:] = find_neuron_connectivities(neuron_idx, labels, True)        
+        mat[neuron_idx,:] = find_neuron_connectivities(neuron_idx, labels, True)
     return mat
