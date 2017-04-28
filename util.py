@@ -214,5 +214,5 @@ def getAdjacencyMatrix(labels):
     p, n = labels.shape
     mat = np.zeros((n,n))
     for neuron_idx in range(n):
-        mat[neuron_idx,:] = find_neuron_connectivities(neuron_idx, labels, True)
+        mat[neuron_idx,:] = find_neuron_connectivities(neuron_idx, labels, True)        
     return mat

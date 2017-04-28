@@ -28,15 +28,14 @@ def getEdgeFeatures(features, edges_shape):
         e_f_idex += 1
     return edge_features
 
-def test_connectivites_for_neuron(neuron_idx, edges, labels, test_data, w):
+def test_connectivites_for_neuron(neuron_idx, edges, labels, session, w):
     print 'test_connectivites_for_neuron', neuron_idx
     brothers = find_neuron_connectivities(neuron_idx,labels)
     if brothers == []:
         print 'no connectivities found for neuron', neuron_idx
         return -1
     else:
-        print 'brothers for', neuron_idx, 'are', brothers
-        session = test_data[:,:50]
+        print 'brothers for', neuron_idx, 'are', brothers        
         features, labels = simpleUndirected(session)
         edge_features = getEdgeFeatures(features, edges.shape)
         X = list(zip(features, [edges]*len(features), edge_features))
@@ -65,14 +64,32 @@ def test_connectivites_for_neuron(neuron_idx, edges, labels, test_data, w):
 
 inference_method = get_installed(["qpbo", "ad3", "lp"])[0]
 
+time_frame = 100
+print 'time_frame is', time_frame
 data = get_dF_F1()
 print 'Original data shape', data.shape
-test_start_idx = random.randint(50, data.shape[1])
-test_data = data[:,test_start_idx:test_start_idx+50]
+test_start_idx = random.randint(time_frame, data.shape[1])
+test_data = data[:,test_start_idx:test_start_idx+time_frame]
 test_data = binarize(test_data)
 
-train_data = data[:, :50]
+train_data = data[:, :time_frame]
 train_data = binarize(train_data)
+
+
+
+
+# X, shuf_A_true, unshuffle = simulatedData(n=18, T=100)
+# A_true = shuf_A_true[unshuffle][:, unshuffle]
+# X_data = binarize(X[unshuffle])
+# train_size = 200
+# test_size = 200
+# X_train = sessionize(X_data[:, :train_size], num_sessions=2)[0]
+# X_test = X_data[:, -test_size:]
+
+# train_data = X_train
+# test_data = X_test
+
+
 
 (n, p) = train_data.shape
 print("We will use train_data of shape: {}".format((n, p)))
@@ -88,49 +105,67 @@ print 'get features, labels'
 
 # get adjacencyMatrix
 adjacencyMatrix = getAdjacencyMatrix(labels)
-df = pd.DataFrame(adjacencyMatrix)
-df.to_csv('adjacencyMatrix.csv', index=False, header=False)
+# df = pd.DataFrame(adjacencyMatrix)
+# df.to_csv('adjacencyMatrix.csv', index=False, header=False)
+list1x = []
+list1y = []
+for i in range(0,20):
+    for j in range(0,20):
+        if adjacencyMatrix[i, j] == 1:
+            list1x.append(i)
+            list1y.append(j)
 
-edges = getEdges(train_data)
-print 'get edges'
-edge_features = getEdgeFeatures(features, edges.shape)
-print 'get edge_features'
+# list2x = []
+# list2y = []
+# for i in range(A_true.shape[0]):
+#     for j in range(A_true.shape[1]):
+#         if A_true[i, j] == 1:
+#             list2x.add(i)
+#             list2y.add(j)
 
-train_Y = labels
-train_X = list(zip(features, [edges]*len(features), edge_features))
+plt.scatter(list1x, list1y, c='r')
+# plt.scatter(list2x, list2y, c='b')
+plt.show()
+
+# edges = getEdges(train_data)
+# print 'get edges'
+# edge_features = getEdgeFeatures(features, edges.shape)
+# print 'get edge_features'
+
+# train_Y = labels
+# train_X = list(zip(features, [edges]*len(features), edge_features))
 
 # print 'fitting the model'
 # model.fit(train_X, train_Y)
 # w = model.w
 
-print 'getting weights'
-with open('weights.txt') as f:
-    content = f.readlines()
-w = []
-for line in content:
-    tokens = line.strip().split()
-    w += tokens
-w = np.asarray(w, dtype='float32')
+# print 'getting weights'
+# with open('weights.txt') as f:
+#     content = f.readlines()
+# w = []
+# for line in content:
+#     tokens = line.strip().split()
+#     w += tokens
+# w = np.asarray(w, dtype='float32')
 
-print 'initializing crf'
-crf.initialize(train_X, train_Y)
+# print 'initializing crf'
+# crf.initialize(train_X, train_Y)
 
-print 'test neurons connectivities'
-valid_neurons = []
-avgs = []
-for neuron_idx in range(n):
-    res = test_connectivites_for_neuron(neuron_idx, edges, labels, test_data, w)
-    if res != -1:
-        valid_neurons.append(neuron_idx)
-        avgs.append(res)
+# print 'test neurons connectivities'
+# neurons = [18]
+# valid_neurons = []
+# avgs = []
+# for neuron_idx in neurons:
+#     res = test_connectivites_for_neuron(neuron_idx, edges, labels, test_data, w)
+#     if res != -1:
+#         valid_neurons.append(neuron_idx)
+#         avgs.append(res)
 
-plt.plot(valid_neurons, avgs)
-plt.xlabel('neurons')
-plt.ylabel('mean correct rate')
-plt.title('Test neurons connectivities')
-plt.show()
-
-
+# plt.plot(valid_neurons, avgs)
+# plt.xlabel('neurons')
+# plt.ylabel('mean correct rate')
+# plt.title('Test neurons connectivities')
+# plt.show()
 
 
 
