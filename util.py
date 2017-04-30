@@ -28,7 +28,7 @@ def simulatedData(n=60, T=10000):
     num_neurons = int(n)
     block_n = num_neurons / 3
     timesteps = int(T)
-    spike_dur = min(200, timesteps / 2)
+    spike_dur = min(500, timesteps / 2)
     spike_strength = 1e-3
 
     def ABlock(n, sigma=0.2, connP=0.5, cap=0.2):
@@ -201,18 +201,20 @@ def find_neuron_connectivities(neuron_idx, labels, getAdjacencyList=False):
             scores[group_zero[t]] += 1
         else:
             scores[group_one[t]] += 1
-    scores[neuron_idx] = -1    
-   
-    threshold = p/2.0 + 4*math.sqrt(p*.25)
-   
+    
+    scores[neuron_idx] = -1
+    max_weight = np.amax(scores)
+
     if getAdjacencyList:
         l = np.zeros((n,))
-        l[scores > threshold] = 1
+        if max_weight == 0:
+            return l
+        l[scores == max_weight] = 1
         return l
     else:
-        if np.amax(scores) == 0:
+        if max_weight == 0:
             return []
-        return np.argwhere(scores > threshold).flatten().tolist()
+        return np.argwhere(scores == max_weight).flatten().tolist()
 
 def getAdjacencyMatrix(labels):
     p, n = labels.shape

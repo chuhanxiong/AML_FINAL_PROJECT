@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import random
 import pandas as pd
 
+inference_method = get_installed(["qpbo", "ad3", "lp"])[0]
+
 def getEdgeFeatures(features, edges_shape):    
     edge_features = [None] * len(features)
     e_f_idex = 0
@@ -62,35 +64,33 @@ def test_connectivites_for_neuron(neuron_idx, edges, labels, session, w):
         print 'neuron', neuron_idx, 'correct_rate_mean:', avg
         return avg
 
-inference_method = get_installed(["qpbo", "ad3", "lp"])[0]
+######################################### get train_data, and test_data from raw Data #########################################
+time_frame = 50000
+print 'time_frame is', time_frame
+data = get_dF_F1()
+print 'Original data shape', data.shape
 
-# time_frame = 100
-# print 'time_frame is', time_frame
-# data = get_dF_F1()
-# print 'Original data shape', data.shape
-# test_start_idx = random.randint(time_frame, data.shape[1])
-# test_data = data[:,test_start_idx:test_start_idx+time_frame]
-# test_data = binarize(test_data)
+test_start_idx = random.randint(time_frame, data.shape[1])
+test_data = data[:,test_start_idx:test_start_idx+time_frame]
+test_data = binarize(test_data)
 
-# train_data = data[:, :time_frame]
-# train_data = binarize(train_data)
-
-
+train_data = data[:, :time_frame]
+train_data = binarize(train_data)
 
 
-X, shuf_A_true, unshuffle = simulatedData(n=18, T=1000)
-A_true = shuf_A_true[unshuffle][:, unshuffle]
-A_true[A_true != 0] = 1
-X_data = binarize(X[unshuffle])
-train_size = 200
-test_size = 200
-X_train = sessionize(X_data[:, :train_size], num_sessions=2)[0]
-X_test = X_data[:, -test_size:]
+######################################### get train_data, and test_data from simulatedData #########################################
+# X, shuf_A_true, unshuffle = simulatedData(n=18, T=1000)
+# A_true = shuf_A_true[unshuffle][:, unshuffle]
+# A_true[A_true != 0] = 1
+# X_data = binarize(X[unshuffle])
+# train_size = 200
+# test_size = 200
+# X_train = sessionize(X_data[:, :train_size], num_sessions=2)[0]
+# X_train = X_data
+# X_test = X_data[:, -test_size:]
 
-train_data = X_train
-test_data = X_test
-
-
+# train_data = X_train
+# test_data = X_test
 
 (n, p) = train_data.shape
 print("We will use train_data of shape: {}".format((n, p)))
@@ -108,6 +108,8 @@ print 'get features, labels'
 adjacencyMatrix = getAdjacencyMatrix(labels)
 # df = pd.DataFrame(adjacencyMatrix)
 # df.to_csv('adjacencyMatrix.csv', index=False, header=False)
+
+# list1 contains points from the adjacency matrix
 list1x = []
 list1y = []
 s1 = set()
@@ -119,23 +121,25 @@ for i in range(adjacencyMatrix.shape[0]):
             list1y.append(j)
             s1.add((i, j))
 
-# plt.scatter(list1x, list1y, c='r')
-# plt.show()
+plt.scatter(list1x, list1y, c='b')
+plt.show()
 
+# list2 contains points from A_true matrix, i.e., the adjacency matrix from the simulatedData
 list2x = []
 list2y = []
 s2 = set()
 print A_true.shape
 for i in range(A_true.shape[0]):
     for j in range(A_true.shape[1]):
-        if A_true[i, j] == 1:
+        if A_true[i, j] == 1 and i != j:
             list2x.append(i)
             list2y.append(j)
             s2.add((i, j))
 
-# plt.scatter(list2x, list2y, c='b')
-# plt.show()
+plt.scatter(list2x, list2y, c='b')
+plt.show()
 
+# list3 contains the intersection of the adjacency matrix and the A_ture matrix
 s3 = s1.intersection(s2)
 list3x = []
 list3y = []
@@ -144,22 +148,23 @@ for x,y in s3:
     list3y.append(y)
 
 
-# plt.scatter(list3x, list3y, c='g')
-# plt.show()
+plt.scatter(list3x, list3y, c='g')
+plt.show()
 
-print 'overlap rate for s2', 1.0*len(s3)/len(s2) #60%
-print 'overlap rate for s1', 1.0*len(s3)/len(s1) #40%
-# edges = getEdges(train_data)
-# print 'get edges'
-# edge_features = getEdgeFeatures(features, edges.shape)
-# print 'get edge_features'
+print 'overlap rate for s2', 1.0*len(s3)/len(s2) # recall
+print 'overlap rate for s1', 1.0*len(s3)/len(s1) # precision
 
-# train_Y = labels
-# train_X = list(zip(features, [edges]*len(features), edge_features))
+edges = getEdges(train_data)
+print 'get edges'
+edge_features = getEdgeFeatures(features, edges.shape)
+print 'get edge_features'
 
-# print 'fitting the model'
-# model.fit(train_X, train_Y)
-# w = model.w
+train_Y = labels
+train_X = list(zip(features, [edges]*len(features), edge_features))
+
+print 'fitting the model'
+model.fit(train_X, train_Y)
+w = model.w
 
 # print 'getting weights'
 # with open('weights.txt') as f:
@@ -170,86 +175,21 @@ print 'overlap rate for s1', 1.0*len(s3)/len(s1) #40%
 #     w += tokens
 # w = np.asarray(w, dtype='float32')
 
-# print 'initializing crf'
-# crf.initialize(train_X, train_Y)
+print 'initializing crf'
+crf.initialize(train_X, train_Y)
 
-# print 'test neurons connectivities'
-# neurons = [18]
-# valid_neurons = []
-# avgs = []
-# for neuron_idx in neurons:
-#     res = test_connectivites_for_neuron(neuron_idx, edges, labels, test_data, w)
-#     if res != -1:
-#         valid_neurons.append(neuron_idx)
-#         avgs.append(res)
+print 'test neurons connectivities'
+neurons = [18]
+valid_neurons = []
+avgs = []
+for neuron_idx in neurons:
+    res = test_connectivites_for_neuron(neuron_idx, edges, labels, test_data, w)
+    if res != -1:
+        valid_neurons.append(neuron_idx)
+        avgs.append(res)
 
-# plt.plot(valid_neurons, avgs)
-# plt.xlabel('neurons')
-# plt.ylabel('mean correct rate')
-# plt.title('Test neurons connectivities')
-# plt.show()
-
-
-
-
-# print 'building sessions'
-# A = range(53)
-# B = range(53, 105)
-# C = range(105, n)
-
-# sessionA = test_data[:,:50]
-# sessionA[B+C,:] = 0
-# print 'sessionA shape', sessionA.shape
-# print 'non-zero entries', np.sum(sessionA)
-# A_features, A_Y = simpleUndirected(sessionA)
-# A_edge_features = getEdgeFeatures(A_features, edges.shape)
-# A_X = list(zip(A_features, [edges]*len(A_features), A_edge_features))
-
-# sessionB = test_data[:,50:100]
-# sessionB[A+C,:] = 0
-# print 'sessionB shape', sessionB.shape
-# print 'non-zero entries', np.sum(sessionB)
-# B_features, B_Y = simpleUndirected(sessionB)
-# B_edge_features = getEdgeFeatures(B_features, edges.shape)
-# B_X = list(zip(B_features, [edges]*len(B_features), B_edge_features))
-
-# sessionC = test_data[:,100:]
-# sessionC[A+B,:] = 0
-# print 'sessionC shape', sessionC.shape
-# print 'non-zero entries', np.sum(sessionC)
-# C_features, C_Y = simpleUndirected(sessionC)
-# C_edge_features = getEdgeFeatures(C_features, edges.shape)
-# C_X = list(zip(C_features, [edges]*len(C_features), C_edge_features))
-
-
-# print 'doing the inference'
-
-# print 'test sessionA'
-# A_correct_rate_list = []
-# for x, y in zip(A_X, A_Y):   
-#     y_hat = crf.inference(x, w)
-#     correct_rate = np.zeros(shape=(y_hat.shape))
-#     correct_rate[y_hat==y] = 1
-#     A_correct_rate_list.append(np.sum(correct_rate)/(1.0*len(correct_rate)))
-#     print 'correct_rate', A_correct_rate_list[-1]
-# print 'A_correct_rate_mean:', np.mean(A_correct_rate_list)
-
-# print 'test sessionB'
-# B_correct_rate_list = []
-# for x, y in zip(B_X, B_Y):
-#     y_hat = crf.inference(x, w)
-#     correct_rate = np.zeros(shape=(y_hat.shape))
-#     correct_rate[y_hat==y] = 1
-#     B_correct_rate_list.append(np.sum(correct_rate)/(1.0*len(correct_rate)))
-#     print 'correct_rate', B_correct_rate_list[-1]
-# print 'B_correct_rate_mean:', np.mean(B_correct_rate_list)
-
-# print 'test sessionC'
-# C_correct_rate_list = []
-# for x, y in zip(C_X, C_Y):
-#     y_hat = crf.inference(x, w)
-#     correct_rate = np.zeros(shape=(y_hat.shape))
-#     correct_rate[y_hat==y] = 1    
-#     C_correct_rate_list.append(np.sum(correct_rate)/(1.0*len(correct_rate)))
-#     print 'correct_rate', C_correct_rate_list[-1]
-# print 'C_correct_rate_mean:', np.mean(C_correct_rate_list)
+plt.plot(valid_neurons, avgs)
+plt.xlabel('neurons')
+plt.ylabel('mean correct rate')
+plt.title('Test neurons connectivities')
+plt.show()
