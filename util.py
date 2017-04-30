@@ -28,8 +28,7 @@ def simulatedData(n=60, T=10000):
     strict_pos = True
     num_neurons = int(n)
     block_n = num_neurons / 3
-    timesteps = int(T)
-#    spike_dur = min(200, timesteps / 2)
+    timesteps = int(T)    
     spike_dur = min(500, timesteps / 2)
     spike_strength = 1e-3
 
@@ -54,7 +53,7 @@ def simulatedData(n=60, T=10000):
 
     if strict_pos:
         true_A = np.abs(true_A)
-#        true_A[true_A < 0] = 0
+    # true_A[true_A < 0] = 0
     # Shuffle A, no cheating due to neurons being prearranged
     true_A = np.abs(true_A)
     shuffle = np.random.permutation(num_neurons)
@@ -204,13 +203,13 @@ def find_neuron_connectivities(neuron_idx, labels, getAdjacencyList=False):
     for t in range(p):
         if t in group_zero and neuron_idx in group_zero[t]:
             # in group_zero
-#            scores[group_zero[t]] += 1
+            scores[group_zero[t]] += 1
             pass
         else:
             scores[group_one[t]] += 1
     scores[neuron_idx] = -1
-#    print("neuron {0}, scores =\n{1}".format(neuron_idx, scores))
-#    threshold = p/2.0 + 4*math.sqrt(p*.25)
+    # print("neuron {0}, scores =\n{1}".format(neuron_idx, scores))
+    # threshold = p/2.0 + 4*math.sqrt(p*.25)
     density = np.mean(labels)
     prob = density ** 2 # Probability of two neurons randomly firing same timestep
     threshold = p*prob + math.sqrt(p*(prob ** 2))
